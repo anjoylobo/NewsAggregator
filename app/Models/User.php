@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -63,5 +64,19 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    // Indicate that the model should use a UUID as the primary key
+    protected $keyType = 'string'; // UUIDs are strings
+    public $incrementing = false;  // Disable auto-incrementing for the 'id' column
+
+    // Automatically generate UUID for the primary key
+    protected static function booted()
+    {
+        static::creating(function ($model) {
+            if (!$model->id) {
+                $model->id = (string) Str::uuid(); // Generate UUID if not already set
+            }
+        });
     }
 }
