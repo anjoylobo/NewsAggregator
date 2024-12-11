@@ -6,7 +6,7 @@ WORKDIR /var/www/html
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
-    zip unzip curl git libpng-dev libonig-dev libxml2-dev \
+    zip unzip curl git libpng-dev libonig-dev libxml2-dev cron \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
 # Install Composer
@@ -21,7 +21,13 @@ RUN chmod -R 775 storage bootstrap/cache
 # Set the user to avoid permission issues
 RUN chown -R www-data:www-data /var/www/html
 
-# Expose port 9000 and start PHP-FPM
-EXPOSE 9000
+# Add crontab configuration
+COPY ./crontab /etc/cron.d/laravel-cron
+RUN chmod 0644 /etc/cron.d/laravel-cron && crontab /etc/cron.d/laravel-cron
 
-CMD ["php-fpm"]
+# Ensure cron logs are written to stdout/stderr
+RUN touch /var/log/cron.log
+
+# Expose port 9000 and start both cron and PHP-FPM
+EXPOSE 9000
+CMD ["sh", "-c", "cron && php-fpm"]

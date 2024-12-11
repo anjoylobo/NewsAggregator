@@ -25,11 +25,9 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // Schedule your commands here, e.g.:
-        $schedule->command('fetch:news')->everyMinute();
-        // ->appendOutputTo(storage_path('logs/scheduler.log'))
-        // ->sendOutputTo(storage_path('logs/full_scheduler.log'))
-        // ->runInBackground();
+        $schedule->command('fetch:news')
+        ->everyMinute()
+        ->appendOutputTo(storage_path('logs/scheduler.log'));
     }
 
     /**
