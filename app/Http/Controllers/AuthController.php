@@ -265,6 +265,14 @@ class AuthController extends Controller
             'email' => 'required|string|email',
         ]);
 
+        $existingUser = User::where('email', $request->email)->first();
+        if ($existingUser->deleted) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'This account has been deactivated. Please contact support to reactivate your account.',
+            ], 403);
+        }
+
         $status = Password::sendResetLink($request->only('email'));
 
         if ($status === Password::RESET_LINK_SENT) {

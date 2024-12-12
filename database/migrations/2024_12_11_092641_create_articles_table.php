@@ -20,9 +20,10 @@ return new class extends Migration
             $table->string('category')->default('general')->nullable(false); 
             $table->datetime('published_at');
             $table->text('content')->nullable();
+            $table->string('author')->nullable(); 
             $table->timestamps();
 
-            $table->index(['category', 'source', 'published_at']);
+            $table->index(['category', 'source', 'published_at','author']);
         });
     }
 

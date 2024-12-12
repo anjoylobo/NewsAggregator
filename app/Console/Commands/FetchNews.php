@@ -51,6 +51,7 @@ class FetchNews extends Command
                         'title' => $item['title'],
                         'description' => $item['description'],
                         'source' => $source,
+                        'author' => $item['author'],
                         'published_at' => Carbon::parse($item['publishedAt'])->toDateTimeString(), // Convert datetime format
                     ];
 
@@ -66,6 +67,7 @@ class FetchNews extends Command
                             'published_at' => $article['published_at'],
                             'category' => 'general',
                             'content' => $article['content'] ?? '',
+                            'author' => $article['author'],
                         ]
                     );
                 }

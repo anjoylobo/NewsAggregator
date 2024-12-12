@@ -4,23 +4,40 @@ namespace App\Http\Controllers;
 
 use App\Models\Article;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class ArticleController extends Controller
 {
     public function index(Request $request)
     {
-        $articles = Article::paginate(10); // Paginate articles, 10 per page
+        $articles = Article::paginate(10);
         return response()->json($articles);
     }
 
     public function show($id)
     {
         $article = Article::find($id);
+
+        if (!$article) {
+            return response()->json(['error' => 'Article not found'], 404);
+        }
+
         return response()->json($article);
     }
 
     public function search(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'keyword' => 'string|nullable',
+            'date' => 'date|nullable',
+            'category' => 'string|nullable',
+            'source' => 'string|nullable',
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
         $query = Article::query();
 
         if ($request->has('keyword')) {
