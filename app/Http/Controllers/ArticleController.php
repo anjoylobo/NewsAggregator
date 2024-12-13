@@ -11,6 +11,11 @@ class ArticleController extends Controller
     public function index(Request $request)
     {
         $articles = Article::paginate(10);
+
+        if ($articles->isEmpty()) {
+            return response()->json(['message' => 'No articles available'], 200);
+        }
+
         return response()->json($articles);
     }
 
@@ -19,7 +24,7 @@ class ArticleController extends Controller
         $article = Article::find($id);
 
         if (!$article) {
-            return response()->json(['error' => 'Article not found'], 404);
+            return response()->json(['errors' => 'Article not found'], 404);
         }
 
         return response()->json($article);
@@ -57,7 +62,7 @@ class ArticleController extends Controller
             $query->whereDate('published_at', $request->date);
         }
 
-        $articles = $query->paginate(10); // Paginate results
+        $articles = $query->paginate(10);
         return response()->json($articles);
     }
 }
