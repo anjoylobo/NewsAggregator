@@ -34,23 +34,10 @@ class FetchNews extends Command
         $newsSources = config('custom.newsSources');
 
         foreach ($categories as $category) {
-            foreach ($newsSources as $source => $urlTemplate) {
+            foreach ($newsSources as $source => $config) {
                 $this->info("Fetching {$category} news from {$source}...");
-                $url = str_replace('{category}', $category, $urlTemplate);
-                switch ($source) {
-                    case 'newsapi':
-                        $this->fetchFromNewsApi($url, $category);
-                        break;
-                    case 'nytimes':
-                        $this->fetchFromNyTimes($url, $category);
-                        break;
-                    case 'theguardian':
-                        $this->fetchFromTheGuardian($url, $category);
-                        break;
-                    default:
-                        $this->error("No handler defined for source: {$source}");
-                        break;
-                }
+                $url = str_replace('{category}', $category, $config['url_template']);
+                $this->fetchArticles($url, $category, $config['fields'], $source);
             }
         }
 
@@ -58,93 +45,82 @@ class FetchNews extends Command
     }
 
     /**
-     * Fetch articles from NewsAPI for a specific category.
+     * Fetch and save articles from the specified URL using the provided source's config.
      *
      * @param string $url
      * @param string $category
+     * @param array $fields
+     * @param string $source
      * @return void
      */
-    private function fetchFromNewsApi(string $url, string $category)
+    private function fetchArticles(string $url, string $category, array $fields, string $source)
     {
         $response = Http::get($url);
 
         if ($response->successful()) {
-            $articles = $response->json()['articles'] ?? [];
+            $articles = $this->extractArticles($response, $fields);
             foreach ($articles as $item) {
-                $this->saveArticle([
-                    'url' => $item['url'],
-                    'title' => $item['title'],
-                    'description' => $item['description'] ?? 'No description available',
-                    'source' => 'newsapi',
-                    'author' => $item['author'] ?? 'Unknown',
-                    'published_at' => Carbon::parse($item['publishedAt'])->toDateTimeString(),
-                    'content' => $item['content'] ?? '',
-                    'category' => $category,
-                ]);
+                $this->saveArticle(array_merge($item, ['category' => $category, 'source' => $source]));
             }
         } else {
-            $this->error('Failed to fetch data from NewsAPI for category: ' . $category);
+            $this->error("Failed to fetch data from {$source} for category: {$category}");
         }
     }
 
     /**
-     * Fetch articles from NYTimes for a specific category.
+     * Extract the articles from the API response based on the source's field mapping.
      *
-     * @param string $url
-     * @param string $category
-     * @return void
+     * @param \Illuminate\Http\Client\Response $response
+     * @param array $fields
+     * @return array
      */
-    private function fetchFromNyTimes(string $url, string $category)
+    private function extractArticles($response, array $fields)
     {
-        $response = Http::get($url);
+        $articles = [];
+        $responseData = $response->json();
 
-        if ($response->successful()) {
-            $articles = $response->json()['response']['docs'] ?? [];
-            foreach ($articles as $item) {
-                $this->saveArticle([
-                    'url' => $item['web_url'],
-                    'title' => $item['headline']['main'],
-                    'description' => $item['abstract'] ?? 'No description available',
-                    'source' => 'nytimes',
-                    'author' => $item['byline']['original'] ?? 'Unknown',
-                    'published_at' => Carbon::parse($item['pub_date'])->toDateTimeString(),
-                    'content' => $item['lead_paragraph'] ?? '',
-                    'category' => $category,
-                ]);
-            }
-        } else {
-            $this->error('Failed to fetch data from NYTimes for category: ' . $category);
+        // Extract the articles based on the source's field mapping
+        foreach ($responseData['articles'] ?? [] as $item) {
+            $article = [
+                'url' => $this->getFieldValue($item, $fields['url']),
+                'title' => $this->getFieldValue($item, $fields['title']),
+                'description' => $this->getFieldValue($item, $fields['description'], 'No description available'),
+                'author' => $this->getFieldValue($item, $fields['author'], 'Unknown'),
+                'published_at' => Carbon::parse($this->getFieldValue($item, $fields['published_at']))->toDateTimeString(),
+                'content' => $this->getFieldValue($item, $fields['content'], ''),
+            ];
+            $articles[] = $article;
         }
+
+        return $articles;
     }
 
     /**
-     * Fetch articles from The Guardian for a specific category.
+     * Get the value of a field from the article, or return the default value if the field is not set.
      *
-     * @param string $url
-     * @param string $category
-     * @return void
+     * @param array $item
+     * @param string|null $field
+     * @param string $default
+     * @return string|null
      */
-    private function fetchFromTheGuardian(string $url, string $category)
+    private function getFieldValue($item, ?string $field, string $default = null)
     {
-        $response = Http::get($url);
-
-        if ($response->successful()) {
-            $articles = $response->json()['response']['results'] ?? [];
-            foreach ($articles as $item) {
-                $this->saveArticle([
-                    'url' => $item['webUrl'],
-                    'title' => $item['webTitle'],
-                    'description' => $item['fields']['trailText'] ?? 'No description available',
-                    'source' => 'theguardian',
-                    'author' => 'Unknown',
-                    'published_at' => Carbon::parse($item['webPublicationDate'])->toDateTimeString(),
-                    'content' => '',
-                    'category' => $category,
-                ]);
-            }
-        } else {
-            $this->error('Failed to fetch data from The Guardian for category: ' . $category);
+        if ($field === null) {
+            return $default;
         }
+
+        $keys = explode('.', $field);
+        $value = $item;
+
+        foreach ($keys as $key) {
+            if (isset($value[$key])) {
+                $value = $value[$key];
+            } else {
+                return $default;
+            }
+        }
+
+        return $value;
     }
 
     /**
@@ -153,21 +129,20 @@ class FetchNews extends Command
      * @param array $data
      * @return void
      */
-    private function saveArticle(array $data)
+    private function saveArticle(array $article)
     {
-        Article::updateOrCreate(
-            ['url' => $data['url']],
+        // Attempt to find or create the article
+        Article::firstOrCreate(
+            ['url' => $article['url']],
             [
-                'title' => $data['title'],
-                'description' => $data['description'],
-                'source' => $data['source'],
-                'published_at' => $data['published_at'],
-                'category' => $data['category'],
-                'content' => $data['content'],
-                'author' => $data['author'],
+                'title' => $article['title'],
+                'description' => $article['description'],
+                'author' => $article['author'],
+                'published_at' => $article['published_at'],
+                'content' => $article['content'],
+                'category' => $article['category'],
+                'source' => $article['source'],
             ]
         );
-
-        $this->info("Article saved in category {$data['category']}: {$data['title']}");
     }
 }
