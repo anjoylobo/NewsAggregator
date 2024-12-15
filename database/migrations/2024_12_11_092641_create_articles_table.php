@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('author')->nullable(); 
             $table->timestamps();
 
-            $table->index(['category', 'source', 'published_at','author']);
+            $table->index(['url','category', 'source', 'published_at','author']);
         });
     }
 

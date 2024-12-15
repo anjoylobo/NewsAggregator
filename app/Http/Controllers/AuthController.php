@@ -15,6 +15,13 @@ use Illuminate\Validation\Rule;
  *     version="1.0.0",
  *     description="News Aggregator API documentation"
  * )
+ * @OA\SecurityScheme(
+ *     securityScheme="BearerToken",
+ *     type="http",
+ *     scheme="bearer",
+ *     bearerFormat="JWT",
+ *     description="Use the Bearer Token provided after login."
+ * )
  */
 
 class AuthController extends Controller

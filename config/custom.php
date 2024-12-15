@@ -15,7 +15,7 @@ return [
             ],
         ],
         'nytimes' => [
-            'url_template' => 'https://api.nytimes.com/svc/search/v2/articlesearch.json?q:({category})&api-key='. env('NYTIMES_API_KEY'),
+            'url_template' => 'https://api.nytimes.com/svc/search/v2/articlesearch.json?q={category}&api-key='. env('NYTIMES_API_KEY'),
             'fields' => [
                 'url' => 'web_url',
                 'title' => 'headline.main',
@@ -30,7 +30,7 @@ return [
             'fields' => [
                 'url' => 'webUrl',
                 'title' => 'webTitle',
-                'description' => 'fields.trailText',
+                'description' => null,
                 'author' => null,
                 'published_at' => 'webPublicationDate',
                 'content' => null,

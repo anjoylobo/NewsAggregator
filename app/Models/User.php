@@ -67,15 +67,15 @@ class User extends Authenticatable
     }
 
     // Indicate that the model should use a UUID as the primary key
-    protected $keyType = 'string'; // UUIDs are strings
-    public $incrementing = false;  // Disable auto-incrementing for the 'id' column
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     // Automatically generate UUID for the primary key
     protected static function booted()
     {
         static::creating(function ($model) {
             if (!$model->id) {
-                $model->id = (string) Str::uuid(); // Generate UUID if not already set
+                $model->id = (string) Str::uuid();
             }
         });
     }

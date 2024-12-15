@@ -6,28 +6,13 @@ use Illuminate\Console\Command;
 use App\Models\Article;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class FetchNews extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'fetch:news';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
     protected $description = 'Fetch news articles from various APIs and store them in the database';
 
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
     public function handle()
     {
         $categories = config('custom.categories');
@@ -37,77 +22,61 @@ class FetchNews extends Command
             foreach ($newsSources as $source => $config) {
                 $this->info("Fetching {$category} news from {$source}...");
                 $url = str_replace('{category}', $category, $config['url_template']);
-                $this->fetchArticles($url, $category, $config['fields'], $source);
+
+                try {
+                    $this->fetchArticles($url, $category, $config['fields'], $source);
+                    sleep(2);
+                } catch (\Exception $e) {
+                    Log::error("Error fetching news from {$source} for category {$category}: " . $e->getMessage());
+                    $this->error("Error fetching news from {$source}.");
+                }
             }
         }
 
         $this->info('News articles fetched and stored successfully.');
     }
 
-    /**
-     * Fetch and save articles from the specified URL using the provided source's config.
-     *
-     * @param string $url
-     * @param string $category
-     * @param array $fields
-     * @param string $source
-     * @return void
-     */
     private function fetchArticles(string $url, string $category, array $fields, string $source)
     {
         $response = Http::get($url);
 
         if ($response->successful()) {
-            $articles = $this->extractArticles($response, $fields);
-            foreach ($articles as $item) {
-                $this->saveArticle(array_merge($item, ['category' => $category, 'source' => $source]));
+            $articles = $this->extractArticles($response, $fields, $category, $source);
+
+            if (!empty($articles)) {
+                Article::insertOrIgnore($articles);
+                $this->info("Fetched and stored " . count($articles) . " articles from {$source}.");
             }
         } else {
-            $this->error("Failed to fetch data from {$source} for category: {$category}");
+            Log::error("Failed to fetch data from {$source} for category {$category}. Response: " . $response->body());
+            $this->error("Failed to fetch data from {$source}.");
         }
     }
 
-    /**
-     * Extract the articles from the API response based on the source's field mapping.
-     *
-     * @param \Illuminate\Http\Client\Response $response
-     * @param array $fields
-     * @return array
-     */
-    private function extractArticles($response, array $fields)
+    private function extractArticles($response, array $fields, $category, $source): array
     {
         $articles = [];
         $responseData = $response->json();
-
-        // Extract the articles based on the source's field mapping
-        foreach ($responseData['articles'] ?? [] as $item) {
-            $article = [
+        // $this->info("Fetched articles: " . json_encode($responseData, JSON_PRETTY_PRINT));
+        foreach ($responseData['articles'] ?? $responseData['response']['docs'] ?? [] as $item) {
+            $articles[] = [
                 'url' => $this->getFieldValue($item, $fields['url']),
                 'title' => $this->getFieldValue($item, $fields['title']),
                 'description' => $this->getFieldValue($item, $fields['description'], 'No description available'),
                 'author' => $this->getFieldValue($item, $fields['author'], 'Unknown'),
-                'published_at' => Carbon::parse($this->getFieldValue($item, $fields['published_at']))->toDateTimeString(),
-                'content' => $this->getFieldValue($item, $fields['content'], ''),
+                'published_at' => $this->formatDate($this->getFieldValue($item, $fields['published_at'])),
+                'content' => $this->getFieldValue($item, $fields['content'], 'No content available'),
+                'category' => $category,
+                'source' => $source,
             ];
-            $articles[] = $article;
         }
 
         return $articles;
     }
 
-    /**
-     * Get the value of a field from the article, or return the default value if the field is not set.
-     *
-     * @param array $item
-     * @param string|null $field
-     * @param string $default
-     * @return string|null
-     */
     private function getFieldValue($item, ?string $field, string $default = null)
     {
-        if ($field === null) {
-            return $default;
-        }
+        if (!$field) return $default;
 
         $keys = explode('.', $field);
         $value = $item;
@@ -123,26 +92,8 @@ class FetchNews extends Command
         return $value;
     }
 
-    /**
-     * Save an article to the database.
-     *
-     * @param array $data
-     * @return void
-     */
-    private function saveArticle(array $article)
+    private function formatDate(?string $date): ?string
     {
-        // Attempt to find or create the article
-        Article::firstOrCreate(
-            ['url' => $article['url']],
-            [
-                'title' => $article['title'],
-                'description' => $article['description'],
-                'author' => $article['author'],
-                'published_at' => $article['published_at'],
-                'content' => $article['content'],
-                'category' => $article['category'],
-                'source' => $article['source'],
-            ]
-        );
+        return $date ? Carbon::parse($date)->toDateTimeString() : null;
     }
 }
