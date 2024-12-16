@@ -1,66 +1,120 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Laravel Docker Project
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This project is a Laravel application running inside Docker containers. It uses PHP-FPM, MySQL, and Nginx, with cron jobs configured for scheduled tasks.
 
-## About Laravel
+## Prerequisites
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Before you begin, make sure you have the following installed on your machine:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- [Docker](https://www.docker.com/get-started)
+- [Docker Compose](https://docs.docker.com/compose/)
+- [Postman](https://www.postman.com/downloads/) (for testing APIs)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Project Setup
 
-## Learning Laravel
+Follow the steps below to get your Laravel project up and running with Docker.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 1. Clone the Repository
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+Clone the repository to your local machine:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+    git clone https://github.com/anjoylobo/NewsAggregator.git
+    cd your-laravel-repo
 
-## Laravel Sponsors
+### 2. Set Up Environment Variables
+Copy the .env.example file to .env:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+    cp .env.example .env
 
-### Premium Partners
+Modify the .env file with your specific configuration for the database, application key, and other environment variables.
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+### 3. Build and Start the Docker Containers
+Run the following command to build and start your Docker containers:
+
+    docker-compose up --build -d
+
+This will start the Laravel application with PHP-FPM, MySQL, and Nginx. The containers will run in the background (-d).
+
+### 4. Install Composer Dependencies
+Once the containers are running, you'll need to install the project dependencies using Composer:
+
+    docker-compose exec app composer install
+
+### 5. Set Permissions
+Ensure the correct permissions are set for Laravel's storage and cache directories:
+
+    docker-compose exec app chmod -R 775 storage bootstrap/cache
+
+### 6. Run Migrations
+Run your database migrations using Artisan:
+
+    docker-compose exec app php artisan migrate
+
+### 7. Access the Application
+Your Laravel application should now be accessible at http://localhost:8080 in your browser.
+
+### 8. Swagger Documentation
+#### Install Swagger (Laravel)
+To enable API documentation with Swagger, ensure you have the l5-swagger package installed. If not, run:
+
+    docker-compose exec app composer require "darkaonline/l5-swagger"
+#### Generate API Docs
+Run the following Artisan command to generate the Swagger JSON documentation:
+
+    docker-compose exec app php artisan l5-swagger:generate
+#### Once generated, you can access the Swagger UI at:
+
+    http://localhost:8080/api/documentation
+This will display the interactive API documentation, where you can view available routes, parameters, and test API endpoints directly from the UI.
+
+### 9. Postman Collection
+#### Import the Postman Collection
+To test the API, we have provided a Postman collection that contains all the necessary API endpoints for your Laravel project.
+For API testing and exploration, use the Postman collection provided below:
+
+[News Aggregator Postman Collection](https://github.com/anjoylobo/NewsAggregator/blob/main/storage/api-docs/News%20Aggregator.postman_collection.json)
+
+1. Download the collection file by clicking on the link above.
+2. Import the collection into Postman:
+   - Open Postman.
+   - Go to **File > Import**.
+   - Select the downloaded `.json` file.
+3. Explore and test the API endpoints.
+
+Once imported, you can use the collection to test all available API endpoints directly from Postman.
+
+### 9. Cron Jobs
+Cron jobs are configured and will run according to the schedule defined in the crontab file. These jobs are set to run within the Docker container.
+
+### 10. Stopping the Containers
+To stop the Docker containers, run:
+
+    docker-compose down
+This will stop and remove all containers. If you want to remove the containers and volumes, run:
+
+    docker-compose down -v
+
+## File Structure
+1. Dockerfile - Dockerfile for building the Laravel application container.
+2. docker-compose.yml - Docker Compose configuration for PHP-FPM, MySQL, and Nginx containers.
+3. .env.example - Example environment file for configuring application settings.
+4. nginx.conf - Nginx configuration file for routing requests to the Laravel application.
+5. crontab - File containing scheduled cron jobs for the application.
+
+## Troubleshooting
+1. MySQL connection issues: Ensure that your .env file is properly configured with the correct database connection settings.
+2. Permissions issues: Make sure that the storage and bootstrap/cache directories are writable by the web server.
+3. Application not loading: Ensure the Docker containers are running by checking with docker ps.
 
 ## Contributing
+If you'd like to contribute to this project, feel free to fork the repository and submit a pull request. Make sure to follow the coding standards and include appropriate tests with your changes.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Explanation:
 
-## Code of Conduct
+1. **Project Setup**: Step-by-step guide to clone the repository, set up environment variables, and start the Docker containers.
+2. **Docker Compose**: Describes how to use `docker-compose` to build and start the application, including installing dependencies and running migrations.
+3. **File Structure**: An overview of the files in the project, including the Dockerfile, Nginx configuration, and crontab.
+4. **Troubleshooting**: Common issues and how to resolve them.
+5. **Contributing**: Encouragement to contribute with clear instructions for forking and submitting pull requests.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Feel free to adjust the URLs, configuration details, or other specifics based on your exact project setup!
