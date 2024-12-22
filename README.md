@@ -50,10 +50,22 @@ Run your database migrations using Artisan:
 
     docker-compose exec app php artisan migrate
 
-### 7. Access the Application
+### 7. Seed the Database
+To populate the database with initial data, run the database seeder:
+
+    docker-compose exec app php artisan db:seed
+This will run the DatabaseSeeder class, which will populate your tables with any seed data defined in your Laravel project.
+
+### 8. Fetch News Data
+To fetch news data (if this is part of your application logic), run the following command:
+
+    docker-compose exec app php artisan fetch:news
+This command will trigger the fetching process, which could be pulling news data from an API or some external source, depending on how your application is set up.
+
+### 9. Access the Application
 Your Laravel application should now be accessible at http://localhost:8080 in your browser.
 
-### 8. Swagger Documentation
+### 10. Swagger Documentation
 #### Install Swagger (Laravel)
 To enable API documentation with Swagger, ensure you have the l5-swagger package installed. If not, run:
 
@@ -67,7 +79,7 @@ Run the following Artisan command to generate the Swagger JSON documentation:
     http://localhost:8080/api/documentation
 This will display the interactive API documentation, where you can view available routes, parameters, and test API endpoints directly from the UI.
 
-### 9. Postman Collection
+### 11. Postman Collection
 #### Import the Postman Collection
 To test the API, we have provided a Postman collection that contains all the necessary API endpoints for your Laravel project.
 For API testing and exploration, use the Postman collection provided below:
@@ -83,10 +95,10 @@ For API testing and exploration, use the Postman collection provided below:
 
 Once imported, you can use the collection to test all available API endpoints directly from Postman.
 
-### 9. Cron Jobs
+### 12. Cron Jobs
 Cron jobs are configured and will run according to the schedule defined in the crontab file. These jobs are set to run within the Docker container.
 
-### 10. Stopping the Containers
+### 13. Stopping the Containers
 To stop the Docker containers, run:
 
     docker-compose down
