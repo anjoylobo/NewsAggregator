@@ -1,5 +1,4 @@
-<?php
-
+<?
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
@@ -42,6 +41,7 @@ class UserPreferenceSeeder extends Seeder
                 $this->createUserPreference($user, $article);
             }
         } else {
+            // Handle case if there are not enough users or articles
             echo "Not enough users or articles found to create user preferences.\n";
         }
     }
