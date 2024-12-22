@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('personal_access_tokens', function (Blueprint $table) {
-            $table->string('tokenable_id', 36)->change();  // Ensure the column is 36 characters for UUID
+            $table->string('tokenable_id', 36)->change();
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('personal_access_tokens', function (Blueprint $table) {
-            $table->string('tokenable_id', 255)->change();  // Or any previous length
+            $table->string('tokenable_id', 255)->change();
         });
     }
 };

@@ -148,7 +148,6 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        // Validate the input
         $validator = validator($request->all(), [
             'email' => 'required|string|email',
             'password' => 'required|string',
@@ -162,11 +161,9 @@ class AuthController extends Controller
             ], 400);
         }
 
-        // Attempt login
         if (Auth::attempt($request->only('email', 'password'))) {
             $user = Auth::user();
 
-            // Check if the user is marked as deleted
             if ($user->deleted) {
                 return response()->json([
                     'status' => 'error',
@@ -174,7 +171,6 @@ class AuthController extends Controller
                 ], 403);
             }
 
-            // Generate token if login is successful and the user is not deleted
             return response()->json([
                 'status' => 'success',
                 'message' => 'User logged in successfully',
@@ -184,7 +180,6 @@ class AuthController extends Controller
             ]);
         }
 
-        // Invalid credentials
         return response()->json([
             'status' => 'error',
             'message' => 'Invalid credentials',
@@ -210,10 +205,8 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        // Check if the user is authenticated
         $user = $request->user();
 
-        // If the user is not authenticated, return an error response
         if (!$user) {
             return response()->json([
                 'status' => 'error',
@@ -221,9 +214,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Check if the user has any active tokens
         if ($user->tokens()->count() > 0) {
-            // Revoke all tokens for the user
             $user->tokens->each(function ($token) {
                 $token->delete();
             });
@@ -234,7 +225,6 @@ class AuthController extends Controller
             ]);
         }
 
-        // If there are no active tokens, return a message indicating no active sessions
         return response()->json([
             'status' => 'error',
             'message' => 'No active sessions found to log out.',
@@ -335,7 +325,13 @@ class AuthController extends Controller
             ], 404);
         }
 
-        // $user->update(['deleted' => true]);
+        if ($user->deleted) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User is already marked as deleted.',
+            ], 400);
+        }
+
         $user->deleted = true;
         $user->save();
 

@@ -69,4 +69,16 @@ class UserFactory extends Factory
             'ownedTeams'
         );
     }
+
+    /**
+     * Indicate that the user is soft deleted.
+     *
+     * @return \Illuminate\Database\Eloquent\Factories\Factory
+     */
+    public function deleted()
+    {
+        return $this->state(fn (array $attributes) => [
+            'deleted' => true,
+        ]);
+    }
 }

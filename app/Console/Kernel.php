@@ -13,7 +13,6 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        // Register your custom commands here, e.g.:
         \App\Console\Commands\FetchNews::class,
     ];
 
